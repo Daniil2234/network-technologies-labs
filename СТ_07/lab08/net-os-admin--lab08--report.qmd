@@ -1,0 +1,1339 @@
+---
+## Author
+author:
+  name: Седохин Даниил Алексеевич
+  degrees: DSc
+  orcid: 0000-0002-0877-7063
+  email: 1132231845@pfur.ru
+  affiliation:
+    - name: Российский университет дружбы народов
+      country: Российская Федерация
+      postal-code: 117198
+      city: Москва
+      address: ул. Миклухо-Маклая, д. 6
+
+## Title
+title: "Отчёт по лабораторной работе 8"
+subtitle: "Адресация IPv4 и IPv6. Настройка маршрутизации"
+license: "CC BY"
+---
+
+# Цель работы
+
+Изучение принципов маршрутизации в IPv4- и IPv6-сетях и принципов настройки сетевого оборудования.
+
+# Задание
+
+Задана сеть (рис. 8.4), адреса сегментов сети (табл. 8.1), адреса, назначаемые
+интерфейсам устройств (табл. 8.2). Требуется настроить динамическую маршрутизацию по протоколам RIP, OSPF.
+
+Заданы две IPv6-сети и IPv4-сеть (рис. 8.5). Требуется организовать туннель
+IPv6 поверх IPv4, позволяющий передавать данные из одной IPv6-сети в другую IPv6-сеть через сеть IPv4. Назначаемые устройствам сети адреса указаны
+в табл. 8.3
+
+# Выполнение лабораторной работы
+
+Запустим GNS3 VM и GNS3. Создадим новый проект.
+
+В рабочем пространстве разместим и соединим устройства в соответствии
+с топологией, приведённой на рис. 8.4. Используем маршрутизаторы FRR.
+Изменим отображаемые названия устройств. Коммутаторам присвоим названия по принципу msk-user-sw-0x, маршрутизаторам — по принципу
+msk-user-gw-0x, VPCS — по принципу PCx-user, вместо x — порядковый номер устройства.
+Включим захват трафика на соединении между коммутатором sw-01 и маршрутизатором gw-01, а также между коммутатором sw-02 и маршрутизатором
+gw-03.
+([рис. @fig-001]).
+
+![Воспроизведение топологии сети](image/1.png){#fig-001 width=70%}
+
+Присвоим IPv4-адреса оконечным устройствам PC1 и PC2 в соответствии
+с данными в табл. 8.2:
+
+PC1:
+
+ip 10.0.10.10/24 10.0.10.1
+
+save
+
+show ip
+([рис. @fig-002]).
+
+![Присвоение IPV4 адреса для PC1](image/2.png){#fig-002 width=70%}
+
+Теперь для устройства PC2:
+
+ip 10.0.11.10/24 10.0.11.1
+
+save
+
+show ip
+([рис. @fig-003]).
+
+![Присвоение IPV4 адреса для PC2](image/3.png){#fig-003 width=70%}
+
+Настроим IPv4-адреса на интерфейсах маршрутизаторов:
+
+msk-user-gw-01:
+
+frr# configure terminal
+
+frr(config)# hostname msk-user-gw-01
+
+msk-user-gw-01(config)# interface eth0
+
+msk-user-gw-01(config-if)# ip address 10.0.10.1/24
+
+msk-user-gw-01(config-if)# no shutdown
+
+msk-user-gw-01(config-if)# exit
+
+msk-user-gw-01(config)# interface eth1
+
+msk-user-gw-01(config-if)# ip address 10.0.1.1/24
+
+msk-user-gw-01(config-if)# no shutdown
+
+msk-user-gw-01(config-if)# exit
+
+msk-user-gw-01(config)# interface eth2
+
+msk-user-gw-01(config-if)# ip address 10.0.4.2/24
+
+msk-user-gw-01(config-if)# no shutdown
+
+msk-user-gw-01(config-if)# exit
+
+msk-user-gw-01(config)# exit
+
+msk-user-gw-01# write memory
+
+msk-user-gw-01# show running-config
+([рис. @fig-004]).
+
+![Настройка IPV4 адреса на маршрутизаторе gw-01](image/4.png){#fig-004 width=70%}
+
+msk-user-gw-02:
+
+frr# configure terminal
+
+frr(config)# hostname msk-user-gw-02
+
+msk-user-gw-02(config)# interface eth0
+
+msk-user-gw-02(config-if)# ip address 10.0.1.2/24
+
+msk-user-gw-02(config-if)# no shutdown
+
+msk-user-gw-02(config-if)# exit
+
+msk-user-gw-02(config)# interface eth1
+
+msk-user-gw-02(config-if)# ip address 10.0.2.1/24
+
+msk-user-gw-02(config-if)# no shutdown
+
+msk-user-gw-02(config-if)# exit
+
+msk-user-gw-02(config)# exit
+
+msk-user-gw-02# write memory
+
+msk-user-gw-02# show running-config
+([рис. @fig-005]).
+
+![Настройка IPV4 адреса на маршрутизаторе gw-02](image/5.png){#fig-005 width=70%}
+
+msk-user-gw-03:
+
+frr# configure terminal
+
+frr(config)# hostname msk-user-gw-03
+
+msk-user-gw-03(config)# interface eth0
+
+msk-user-gw-03(config-if)# ip address 10.0.11.1/24
+
+msk-user-gw-03(config-if)# no shutdown
+
+msk-user-gw-03(config-if)# exit
+
+msk-user-gw-03(config)# interface eth1
+
+msk-user-gw-03(config-if)# ip address 10.0.2.2/24
+
+msk-user-gw-03(config-if)# no shutdown
+
+msk-user-gw-03(config-if)# exit
+
+msk-user-gw-03(config)# interface eth2
+
+msk-user-gw-03(config-if)# ip address 10.0.3.1/24
+
+msk-user-gw-03(config-if)# no shutdown
+
+msk-user-gw-03(config-if)# exit
+
+msk-user-gw-03(config)# exit
+
+msk-user-gw-03# write memory
+
+msk-user-gw-03# show running-config
+([рис. @fig-006]).
+
+![Настройка IPV4 адреса на маршрутизаторе gw-03](image/6.png){#fig-006 width=70%}
+
+msk-user-gw-04:
+
+frr# configure terminal
+
+frr(config)# hostname msk-user-gw-04
+
+msk-user-gw-04(config)# interface eth0
+
+msk-user-gw-04(config-if)# ip address 10.0.3.2/24
+
+msk-user-gw-04(config-if)# no shutdown
+
+msk-user-gw-04(config-if)# exit
+
+msk-user-gw-04(config)# interface eth1
+
+msk-user-gw-04(config-if)# ip address 10.0.4.1/24
+
+msk-user-gw-04(config-if)# no shutdown
+
+msk-user-gw-04(config-if)# exit
+
+msk-user-gw-04(config)# exit
+
+msk-user-gw-04# write memory
+
+msk-user-gw-04# show running-config
+([рис. @fig-007]).
+
+![Настройка IPV4 адреса на маршрутизаторе gw-04](image/7.png){#fig-007 width=70%}
+
+Присвоим IPv6-адреса оконечным устройствам PC1 и PC2 в соответствии
+с данными в табл. 8.2:
+
+PC1:
+
+ip 2001:10::a/64
+
+save
+
+show ipv6
+
+PC2:
+
+ip 2001:11::a/64
+
+save
+
+show ipv6
+([рис. @fig-008]).
+
+![Присвоение IPv6 адресов для устройств PC1 и PC2](image/8.png){#fig-008 width=70%}
+
+Настроим IPv6-адреса на интерфейсах маршрутизаторов:
+
+msk-user-gw-01:
+
+msk-user-gw-01# configure terminal
+
+msk-user-gw-01(config)# ipv6 forwarding
+
+msk-user-gw-01(config)# interface eth0
+
+msk-user-gw-01(config-if)# ipv6 address 2001:10::1/64
+
+msk-user-gw-01(config-if)# no ipv6 nd suppress-ra
+
+msk-user-gw-01(config-if)# ipv6 nd prefix 2001:10::/64
+
+msk-user-gw-01(config-if)# no shutdown
+
+msk-user-gw-01(config-if)# exit
+
+msk-user-gw-01(config)# interface eth1
+
+msk-user-gw-01(config-if)# ipv6 address 2001:1::1/64
+
+msk-user-gw-01(config-if)# no shutdown
+
+msk-user-gw-01(config-if)# exit
+
+msk-user-gw-01(config)# interface eth2
+
+msk-user-gw-01(config-if)# ipv6 address 2001:4::2/64
+
+msk-user-gw-01(config-if)# no shutdown
+
+msk-user-gw-01(config-if)# exit
+
+msk-user-gw-01(config)# exit
+
+msk-user-gw-01# write memory
+
+msk-user-gw-01# show running-config
+([рис. @fig-009]).
+
+![Настройка IPv6 адреса для маршрутизатора gw-01](image/9.png){#fig-009 width=70%}
+
+Аналогичные действия для маршрутизатора gw-02
+
+msk-user-gw-02:
+
+msk-user-gw-02# configure terminal
+
+msk-user-gw-02(config)# ipv6 forwarding
+
+msk-user-gw-02(config)# interface eth0
+
+msk-user-gw-02(config-if)# ipv6 address 2001:1::2/64
+
+msk-user-gw-02(config-if)# no shutdown
+
+msk-user-gw-02(config-if)# exit
+
+msk-user-gw-02(config)# interface eth1
+
+msk-user-gw-02(config-if)# ipv6 address 2001:2::1/64
+
+msk-user-gw-02(config-if)# no shutdown
+
+msk-user-gw-02(config-if)# exit
+
+msk-user-gw-02(config)# exit
+
+msk-user-gw-02# write memory
+
+msk-user-gw-02# show running-config
+([рис. @fig-010]).
+
+![Настройка IPv6 адреса для маршрутизатора gw-02](image/10.png){#fig-010 width=70%}
+
+Аналогичные действия для маршрутизатора gw-03
+
+msk-user-gw-03:
+
+msk-user-gw-03# configure terminal
+
+msk-user-gw-03(config)# ipv6 forwarding
+
+msk-user-gw-03(config)# interface eth0
+
+msk-user-gw-03(config-if)# ipv6 address 2001:11::1/64
+
+msk-user-gw-03(config-if)# no ipv6 nd suppress-ra
+
+msk-user-gw-03(config-if)# ipv6 nd prefix 2001:11::/64
+
+msk-user-gw-03(config-if)# no shutdown
+
+msk-user-gw-03(config-if)# exit
+
+msk-user-gw-03(config)# interface eth1
+
+msk-user-gw-03(config-if)# ipv6 address 2001:2::2/64
+
+msk-user-gw-03(config-if)# no shutdown
+
+msk-user-gw-03(config-if)# exit
+
+msk-user-gw-03(config)# interface eth2
+
+msk-user-gw-03(config-if)# ipv6 address 2001:3::1/64
+
+msk-user-gw-03(config-if)# no shutdown
+
+msk-user-gw-03(config-if)# exit
+
+msk-user-gw-03(config)# exit
+
+msk-user-gw-03# write memory
+
+msk-user-gw-03# show running-config
+([рис. @fig-011]).
+
+![Настройка IPv6 адреса для маршрутизатора gw-03](image/11.png){#fig-011 width=70%}
+
+Аналогичные действия для маршрутизатора gw-04
+
+msk-user-gw-04:
+
+msk-user-gw-04# configure terminal
+
+msk-user-gw-04(config)# ipv6 forwarding
+
+msk-user-gw-04(config)# interface eth0
+
+msk-user-gw-04(config-if)# ipv6 address 2001:3::2/64
+
+msk-user-gw-04(config-if)# no shutdown
+
+msk-user-gw-04(config-if)# exit
+
+msk-user-gw-04(config)# interface eth1
+
+msk-user-gw-04(config-if)# ipv6 address 2001:4::1/64
+
+msk-user-gw-04(config-if)# no shutdown
+
+msk-user-gw-04(config-if)# exit
+
+msk-user-gw-04(config)# exit
+
+msk-user-gw-04# write memory
+
+msk-user-gw-04# show running-config
+([рис. @fig-012]).
+
+![Настройка IPv6 адреса для маршрутизатора gw-04](image/12.png){#fig-012 width=70%}
+
+Настройка динамической маршрутизации по протоколу RIP
+
+На маршрутизаторах настроим RIP в качестве протокола динамической
+
+маршрутизации:
+
+msk-user-gw-01:
+
+msk-user-gw-01# configure terminal
+
+msk-user-gw-01(config)# router rip
+
+msk-user-gw-01(config-router)# version 2
+
+msk-user-gw-01(config-router)# network eth0
+
+msk-user-gw-01(config-router)# network eth1
+
+msk-user-gw-01(config-router)# network eth2
+
+msk-user-gw-01(config-router)# exit
+
+msk-user-gw-01(config)# exit
+
+msk-user-gw-01# write memory
+([рис. @fig-013]).
+
+![Настройка RIP на маршрутизаторе gw-01](image/13.png){#fig-013 width=70%}
+
+Настройка RIP на маршрутизаторе gw-02
+
+msk-user-gw-02:
+
+msk-user-gw-02# configure terminal
+
+msk-user-gw-02(config)# router rip
+
+msk-user-gw-02(config-router)# version 2
+
+msk-user-gw-02(config-router)# network eth0
+
+msk-user-gw-02(config-router)# network eth1
+
+msk-user-gw-02(config-router)# exit
+
+msk-user-gw-02(config)# exit
+
+msk-user-gw-02# write memory
+([рис. @fig-014]).
+
+![Настройка RIP на маршрутизаторе gw-02](image/14.png){#fig-014 width=70%}
+
+Настройка RIP на маршрутизаторе gw-03
+
+msk-user-gw-03:
+
+msk-user-gw-03# configure terminal
+
+msk-user-gw-03(config)# router rip
+
+msk-user-gw-03(config-router)# version 2
+
+msk-user-gw-03(config-router)# network eth0
+
+msk-user-gw-03(config-router)# network eth1
+
+msk-user-gw-03(config-router)# network eth2
+
+msk-user-gw-03(config-router)# exit
+
+msk-user-gw-03(config)# exit
+
+msk-user-gw-03# write memory
+([рис. @fig-015]).
+
+![Настройка RIP на маршрутизаторе gw-03](image/15.png){#fig-015 width=70%}
+
+Настройка RIP на маршрутизаторе gw-04
+
+msk-user-gw-04:
+
+msk-user-gw-04# configure terminal
+
+msk-user-gw-04(config)# router rip
+
+msk-user-gw-04(config-router)# version 2
+
+msk-user-gw-04(config-router)# network eth0
+
+msk-user-gw-04(config-router)# network eth1
+
+msk-user-gw-04(config-router)# exit
+
+msk-user-gw-04(config)# exit
+
+msk-user-gw-04# write memory
+([рис. @fig-016]).
+
+![Настройка RIP на маршрутизаторе gw-04](image/16.png){#fig-016 width=70%}
+
+Убедимся, что маршрутизация по RIP настроена для каждого маршрутизатора
+
+msk-user-gw-0x#show ip route rip
+
+msk-user-gw-0x#show ip rip
+
+msk-user-gw-0x#show ip rip status
+([рис. @fig-017]).
+
+![Проверка настройки RIP на маршрутизаторе gw-01](image/17.png){#fig-017 width=70%}
+
+Проверка настройки RIP на маршрутизаторе gw-02
+([рис. @fig-018]).
+
+![Проверка настройки RIP на маршрутизаторе gw-02](image/18.png){#fig-018 width=70%}
+
+Проверка настройки RIP на маршрутизаторе gw-03
+([рис. @fig-019]).
+
+![Проверка настройки RIP на маршрутизаторе gw-03](image/19.png){#fig-019 width=70%}
+
+Проверка настройки RIP на маршрутизаторе gw-04
+([рис. @fig-020]).
+
+![Проверка настройки RIP на маршрутизаторе gw-04](image/20.png){#fig-020 width=70%}
+
+Проверим пути прохождения пакетов:
+
+– С PC1 пропингуем PC2 и определим путь следования пакетов:
+
+PC1> ping 10.0.11.10
+
+PC1> trace 10.0.11.10 -P 6
+([рис. @fig-021]).
+
+![Проверка пути прохождения пакетов и определение следования пакетов](image/21.png){#fig-021 width=70%}
+
+Проверим метрики протокола RIP:
+
+msk-user-gw-01# show ip rip
+([рис. @fig-022]).
+
+![Проверка метрики протокола RIP](image/22.png){#fig-022 width=70%}
+
+Пакет проходит через маршрутизатор msk-user-gw-02
+
+Отключим на маршрутизаторе msk-user-gw-02
+
+интерфейс:
+
+msk-user-gw-02# configure terminal
+
+msk-user-gw-02(config)# interface eth0
+
+msk-user-gw-02(config-if)# shutdown
+([рис. @fig-023]).
+
+![Отключение интерфейса на маршрутизаторе gw-02](image/23.png){#fig-023 width=70%}
+
+С PC1 пропингуем PC2 и определим путь следования пакетов. 
+([рис. @fig-024]).
+
+![Пинг с PC1 на PC2 и определение пути следованиея пакетов](image/24.png){#fig-024 width=70%}
+
+Включим на маршрутизаторе msk-user-gw-02 интерфейс:
+
+msk-user-gw-02# configure terminal
+
+msk-user-gw-02(config)# interface eth0
+
+msk-user-gw-02(config-if)# no shutdown
+([рис. @fig-025]).
+
+![Включение интерфейса на маршрутизаторе gw-02](image/25.png){#fig-025 width=70%}
+
+С PC1 пропингуем PC2 и определим путь следования пакетов
+([рис. @fig-026]).
+
+![Пинг с PC1 на PC2 и определение пути следованиея пакетов](image/26.png){#fig-026 width=70%}
+
+Посмотрим захваченный на соединениях трафик
+([рис. @fig-027]).
+
+![Просмотр захваченного на соединениях трафика](image/27.png){#fig-027 width=70%}
+
+На маршрутизаторах настроим RIPng для сетей IPv6:
+
+msk-user-gw-01:
+
+msk-user-gw-01# configure terminal
+
+msk-user-gw-01(config)# router ripng
+
+msk-user-gw-01(config-router)# network eth0
+
+msk-user-gw-01(config-router)# network eth1
+
+msk-user-gw-01(config-router)# network eth2
+
+msk-user-gw-01(config-router)# exit
+
+msk-user-gw-01(config)# exit
+
+msk-user-gw-01# write memory
+([рис. @fig-028]).
+
+![Настройка RIPng для сетей IPv6 на маршрутизаторе gw-01](image/28.png){#fig-028 width=70%}
+
+Настройка RIPng для сетей IPv6 на маршрутизаторе gw-02
+
+msk-user-gw-02:
+
+msk-user-gw-02# configure terminal
+
+msk-user-gw-02(config)# router ripng
+
+msk-user-gw-02(config-router)# network eth0
+
+msk-user-gw-02(config-router)# network eth1
+
+msk-user-gw-02(config-router)# exit
+
+msk-user-gw-02(config)# exit
+
+msk-user-gw-02# write memory
+([рис. @fig-029]).
+
+![Настройка RIPng для сетей IPv6 на маршрутизаторе gw-02](image/29.png){#fig-029 width=70%}
+
+Настройка RIPng для сетей IPv6 на маршрутизаторе gw-03
+
+msk-user-gw-03:
+
+msk-user-gw-03# configure terminal
+
+msk-user-gw-03(config)# router ripng
+
+msk-user-gw-03(config-router)# network eth0
+
+msk-user-gw-03(config-router)# network eth1
+
+msk-user-gw-03(config-router)# network eth2
+
+msk-user-gw-03(config-router)# exit
+
+msk-user-gw-03(config)# exit
+
+msk-user-gw-03# write memory
+([рис. @fig-030]).
+
+![Настройка RIPng для сетей IPv6 на маршрутизаторе gw-03](image/30.png){#fig-030 width=70%}
+
+Настройка RIPng для сетей IPv6 на маршрутизаторе gw-04
+
+msk-user-gw-04:
+
+msk-user-gw-04# configure terminal
+
+msk-user-gw-04(config)# router ripng
+
+msk-user-gw-04(config-router)# network eth0
+
+msk-user-gw-04(config-router)# network eth1
+
+msk-user-gw-04(config-router)# exit
+
+msk-user-gw-04(config)# exit
+
+msk-user-gw-04# write memory
+([рис. @fig-031]).
+
+![Настройка RIPng для сетей IPv6 на маршрутизаторе gw-04](image/31.png){#fig-031 width=70%}
+
+Проверим пути прохождения пакетов:
+
+– С PC1 пропингуем PC2 и определим путь следования пакетов:
+
+PC1> ping 2001:11::a
+
+PC1> trace 2001:11::a
+([рис. @fig-032]).
+
+![Пинг с PC1 на PC2 и определение пути следованиея пакетов](image/32.png){#fig-032 width=70%}
+
+Проверьим метрики протокола RIPng:
+
+msk-user-gw-01# show ipv6 ripng
+([рис. @fig-033]).
+
+![Проверка метрики протокола RIPng](image/33.png){#fig-033 width=70%}
+
+Пакет проходит через маршрутизатор msk-user-gw-02
+
+Отключим на маршрутизаторе msk-user-gw-02
+
+интерфейс:
+
+msk-user-gw-02# configure terminal
+
+msk-user-gw-02(config)# interface eth0
+
+msk-user-gw-02(config-if)# shutdown
+([рис. @fig-034]).
+
+![Отключение интерфейса на маршрутизаторе gw-02](image/34.png){#fig-034 width=70%}
+
+Проверим метрики протокола RIPng:
+
+msk-user-gw-01# show ipv6 ripng
+([рис. @fig-035]).
+
+![Проверка метрики протокола RIPng](image/35.png){#fig-035 width=70%}
+
+С PC1 пропингуем PC2 и определим путь следования пакетов
+([рис. @fig-036]).
+
+![Пинг с PC1 на PC2 и определение пути следованиея пакетов](image/36.png){#fig-036 width=70%}
+
+Включим на маршрутизаторе msk-user-gw-02 интерфейс:
+
+msk-user-gw-02# configure terminal
+
+msk-user-gw-02(config)# interface eth0
+
+msk-user-gw-02(config-if)# no shutdown
+([рис. @fig-037]).
+
+![Включение интерфейса на маршрутизаторе gw-02](image/37.png){#fig-037 width=70%}
+
+С PC1 пропингуем PC2 и определим путь следования пакетов
+([рис. @fig-038]).
+
+![Пинг с PC1 на PC2 и определение пути следованиея пакетов](image/38.png){#fig-038 width=70%}
+
+Настройка динамической маршрутизации по протоколу OSPF.
+
+На маршрутизаторах настроим OSPFv2 для сетей IPv4:
+
+msk-user-gw-01:
+
+msk-user-gw-01# configure terminal
+
+msk-user-gw-01(config)# router ospf
+
+msk-user-gw-01(config-router)# network 10.0.10.0/24 area 0.0.0.0
+
+msk-user-gw-01(config-router)# network 10.0.1.0/24 area 0.0.0.0
+
+msk-user-gw-01(config-router)# network 10.0.4.0/24 area 0.0.0.0
+
+msk-user-gw-01(config-router)# exit
+
+msk-user-gw-01(config)# exit
+
+msk-user-gw-01# write memory
+([рис. @fig-039]).
+
+![Настройка OSPFv2 для сетей IPV4 на маршрутизаторе gw-01](image/39.png){#fig-039 width=70%}
+
+Настройка OSPFv2 для сетей IPV4 на маршрутизаторе gw-02
+
+msk-user-gw-02:
+
+msk-user-gw-02# configure terminal
+
+msk-user-gw-02(config)# router ospf
+
+msk-user-gw-02(config-router)# network 10.0.1.0/24 area 0.0.0.0
+
+msk-user-gw-02(config-router)# network 10.0.2.0/24 area 0.0.0.0
+
+msk-user-gw-02(config-router)# exit
+
+msk-user-gw-02(config)# exit
+
+msk-user-gw-02# write memory
+([рис. @fig-040]).
+
+![Настройка OSPFv2 для сетей IPV4 на маршрутизаторе gw-02](image/40.png){#fig-040 width=70%}
+
+Настройка OSPFv2 для сетей IPV4 на маршрутизаторе gw-03
+
+msk-user-gw-03:
+
+msk-user-gw-03# configure terminal
+
+msk-user-gw-03(config)# router ospf
+
+msk-user-gw-03(config-router)# network 10.0.11.0/24 area 0.0.0.0
+
+msk-user-gw-03(config-router)# network 10.0.2.0/24 area 0.0.0.0
+
+msk-user-gw-03(config-router)# network 10.0.3.0/24 area 0.0.0.0
+
+msk-user-gw-03(config-router)# exit
+
+msk-user-gw-03(config)# exit
+
+msk-user-gw-03# write memory
+([рис. @fig-041]).
+
+![Настройка OSPFv2 для сетей IPV4 на маршрутизаторе gw-03](image/41.png){#fig-041 width=70%}
+
+Настройка OSPFv2 для сетей IPV4 на маршрутизаторе gw-04
+
+msk-user-gw-04:
+
+msk-user-gw-04# configure terminal
+
+msk-user-gw-04(config)# router ospf
+
+msk-user-gw-04(config-router)# network 10.0.3.0/24 area 0.0.0.0
+
+msk-user-gw-04(config-router)# network 10.0.4.0/24 area 0.0.0.0
+
+msk-user-gw-04(config-router)# exit
+
+msk-user-gw-04(config)# exit
+
+msk-user-gw-04# write memory
+([рис. @fig-042]).
+
+![Настройка OSPFv2 для сетей IPV4 на маршрутизаторе gw-04](image/42.png){#fig-042 width=70%}
+
+С PC1 пропингуем PC2 и определим путь следования пакетов:
+
+PC1> ping 10.0.11.10
+
+PC1> trace 10.0.11.10 -P 6
+([рис. @fig-043]).
+
+![Пинг с PC1 на PC2 и определение пути следованиея пакетов](image/43.png){#fig-043 width=70%}
+
+Проверим таблицу маршрутизации протокола OSPFv2:
+
+msk-user-gw-01# show ip ospf neighbor
+
+msk-user-gw-01# show ip ospf route
+([рис. @fig-044]).
+
+![Проверка таблицы маршрутизации проткоола OSPFv2](image/44.png){#fig-044 width=70%}
+
+Пакет проходит через маршрутизатор msk-user-gw-04
+
+Отключим на маршрутизаторе msk-user-gw-04 интерфейс:
+
+msk-user-gw-04# configure terminal
+
+msk-user-gw-04(config)# interface eth0
+
+msk-user-gw-04(config-if)# shutdown
+([рис. @fig-045]).
+
+![Отключение интерфейса на маршрутизаторе gw-04](image/45.png){#fig-045 width=70%}
+
+Проверим таблицу маршрутизации протокола OSPFv2:
+
+msk-user-gw-01# show ip ospf neighbor
+
+msk-user-gw-01# show ip ospf route
+([рис. @fig-046]).
+
+![Проверка таблицы маршрутизации проткоола OSPFv2](image/46.png){#fig-046 width=70%}
+
+С PC1 пропингуем PC2 и определим путь следования пакетов
+([рис. @fig-047]).
+
+![Пинг с PC1 на PC2 и определение пути следованиея пакетов](image/47.png){#fig-047 width=70%}
+
+Включимна маршрутизаторе msk-user-gw-04 интерфейс:
+
+msk-user-gw-04# configure terminal
+
+msk-user-gw-04(config)# interface eth0
+
+msk-user-gw-04(config-if)# no shutdown
+([рис. @fig-048]).
+
+![Включение интерфейса на маршрутизаторе gw-04](image/48.png){#fig-048 width=70%}
+
+С PC1 пропингуем PC2 и определим путь следования пакетов
+([рис. @fig-049]).
+
+![Пинг с PC1 на PC2 и определение пути следованиея пакетов](image/49.png){#fig-049 width=70%}
+
+На маршрутизаторах настроим OSPFv3 для сетей IPv6:
+
+msk-user-gw-01:
+
+msk-user-gw-01# configure terminal
+
+msk-user-gw-01(config)# router ospf6
+
+msk-user-gw-01(config-rtr)# ospf6 router-id 1.1.1.1
+
+msk-user-gw-01(config-rtr)# exit
+
+msk-user-gw-01(config)# interface eth0
+
+msk-user-gw-01(config-if)# ipv6 ospf6 area 0
+
+msk-user-gw-01(config-if)# exit
+
+msk-user-gw-01(config)# interface eth1
+
+msk-user-gw-01(config-if)# ipv6 ospf6 area 0
+
+msk-user-gw-01(config-if)# exit
+
+msk-user-gw-01(config)# interface eth2
+
+msk-user-gw-01(config-if)# ipv6 ospf6 area 0
+
+msk-user-gw-01(config-if)# exit
+
+msk-user-gw-01(config)# exit
+
+msk-user-gw-01# write memory
+([рис. @fig-050]).
+
+![Настройка OSPFv3 для сетей IPv6 на маршрутизаторе gw-01](image/50.png){#fig-050 width=70%}
+
+Настройка OSPFv3 для сетей IPv6 на маршрутизаторе gw-02
+
+msk-user-gw-02:
+
+msk-user-gw-02# configure terminal
+
+msk-user-gw-02(config)# router ospf6
+
+msk-user-gw-02(config-rtr)# ospf6 router-id 2.2.2.2
+
+msk-user-gw-02(config-rtr)# exit
+
+msk-user-gw-02(config)# interface eth0
+
+msk-user-gw-02(config-if)# ipv6 ospf6 area 0
+
+msk-user-gw-02(config-if)# exit
+
+msk-user-gw-02(config)# interface eth1
+
+msk-user-gw-02(config-if)# ipv6 ospf6 area 0
+
+msk-user-gw-02(config-if)# exit
+
+msk-user-gw-02(config)# exit
+
+msk-user-gw-02# write memory
+([рис. @fig-051]).
+
+![Настройка OSPFv3 для сетей IPv6 на маршрутизаторе gw-02](image/51.png){#fig-051 width=70%}
+
+Настройка OSPFv3 для сетей IPv6 на маршрутизаторе gw-03
+
+msk-user-gw-03:
+
+msk-user-gw-03# configure terminal
+
+msk-user-gw-03(config)# router ospf6
+
+msk-user-gw-03(config-rtr)# ospf6 router-id 3.3.3.3
+
+msk-user-gw-03(config-rtr)# exit
+
+msk-user-gw-03(config)# interface eth0
+
+msk-user-gw-03(config-if)# ipv6 ospf6 area 0
+
+msk-user-gw-03(config-if)# exit
+
+msk-user-gw-03(config)# interface eth1
+
+msk-user-gw-03(config-if)# ipv6 ospf6 area 0
+
+msk-user-gw-03(config-if)# exit
+
+msk-user-gw-03(config)# interface eth2
+
+msk-user-gw-03(config-if)# ipv6 ospf6 area 0
+
+msk-user-gw-03(config-if)# exit
+
+msk-user-gw-03(config)# exit
+
+msk-user-gw-03# write memory
+([рис. @fig-052]).
+
+![Настройка OSPFv3 для сетей IPv6 на маршрутизаторе gw-03](image/52.png){#fig-052 width=70%}
+
+Настройка OSPFv3 для сетей IPv6 на маршрутизаторе gw-04
+
+msk-user-gw-04:
+
+msk-user-gw-04# configure terminal
+
+msk-user-gw-04(config)# router ospf6
+
+msk-user-gw-04(config-rtr)# ospf6 router-id 4.4.4.4
+
+msk-user-gw-04(config-rtr)# exit
+
+msk-user-gw-04(config)# interface eth0
+
+msk-user-gw-04(config-if)# ipv6 ospf6 area 0
+
+msk-user-gw-04(config-if)# exit
+
+msk-user-gw-04(config)# interface eth1
+
+msk-user-gw-04(config-if)# ipv6 ospf6 area 0
+
+msk-user-gw-04(config-if)# exit
+
+msk-user-gw-04(config)# exit
+
+msk-user-gw-04# write memory
+([рис. @fig-053]).
+
+![Настройка OSPFv3 для сетей IPv6 на маршрутизаторе gw-04](image/53.png){#fig-053 width=70%}
+
+С PC1 пропингуем PC2 и определим путь следования пакетов:
+
+PC1> ping 2001:11::a
+
+PC1> trace 2001:11::a
+([рис. @fig-054]).
+
+![Пинг с PC1 на PC2 и определение пути следованиея пакетов](image/54.png){#fig-054 width=70%}
+
+Проверим таблицу маршрутизации протокола OSPFv3:
+
+msk-user-gw-01# show ipv6 ospf6 neighbor
+
+msk-user-gw-01# show ipv6 ospf6 route
+([рис. @fig-055]).
+
+![Проверка таблицы маршрутизации проткоола OSPFv3](image/55.png){#fig-055 width=70%}
+
+Пакет проходит через маршрутизатор msk-user-gw-04
+
+Отключим на маршрутизаторе msk-user-gw-04 интерфейс:
+
+msk-user-gw-04# configure terminal
+
+msk-user-gw-04(config)# interface eth0
+
+msk-user-gw-04(config-if)# shutdown
+([рис. @fig-056]).
+
+![Отключение интерфейса на маршрутизаторе gw-04](image/56.png){#fig-056 width=70%}
+
+Проверим таблицу маршрутизации протокола OSPFv3:
+
+msk-user-gw-01# show ipv6 ospf6 route
+([рис. @fig-057]).
+
+![Проверка таблицы маршрутизации протокола OSPFv3](image/57.png){#fig-057 width=70%}
+
+С PC1 пропингуем PC2 и определим путь следования пакетов.
+([рис. @fig-058]).
+
+![Пинг с PC1 на PC2 и определение пути следованиея пакетов](image/58.png){#fig-058 width=70%}
+
+Включим на маршрутизаторе msk-user-gw-04 интерфейс:
+
+msk-user-gw-04# configure terminal
+
+msk-user-gw-04(config)# interface eth0
+
+msk-user-gw-04(config-if)# no shutdown
+([рис. @fig-059]).
+
+![Включение интерфейса на маршрутизаторе gw-04](image/59.png){#fig-059 width=70%}
+
+С PC1 пропингуем PC2 и определим путь следования пакетов.
+([рис. @fig-060]).
+
+![Пинг с PC1 на PC2 и определение пути следованиея пакетов](image/60.png){#fig-060 width=70%}
+
+Создадим новый проект в GNS3.
+
+В рабочем пространстве разместим и соединим устройства в соответствии
+с топологией, приведённой на рис. 8.5. Используем маршрутизаторы VyOS.
+
+Изменим отображаемые названия устройств. Коммутаторам присвоим названия по принципу msk-user-sw-0x, маршрутизаторам — по принципу
+msk-user-gw-0x, VPCS — по принципу PCx-user, вместо x — порядковый номер устройства.
+
+На соединении между первым и третьим маршрутизаторами подключим
+анализатор трафика.
+([рис. @fig-061]).
+
+![Воспроизведение топологии сети](image/61.png){#fig-061 width=70%}
+
+Присвоим адреса оконечным устройствам PC1 и PC2 в соответствии с данными в табл. 8.3:
+
+PC1-user:
+
+ip 1000::a/64
+
+save
+
+show ipv6
+
+PC2-user:
+
+ip 1002::a/64
+
+save
+
+show ipv6
+([рис. @fig-062]).
+
+![Присвоение адресов оконченым устройствам PC1 и PC2](image/62.png){#fig-062 width=70%}
+
+Установим систему на маршрутизаторы VyOS:
+
+vyos@vyos:~$ install image
+
+Далее ответим на вопросы диалога установки. 
+
+По завершении диалога перезапустим маршрутизатор, введя команду reboot.
+([рис. @fig-063]).
+
+![Установка системы на маршрутизаторы VyOS](image/63.png){#fig-063 width=70%}
+
+На маршрутизаторах перейдем в режим конфигурирования, измениме имя
+
+устройства.
+
+vyos@vyos$ configure
+
+vyos@vyos# set system host-name msk-user-gw-0x
+
+vyos@vyos# compare
+
+vyos@vyos# commit
+
+vyos@vyos# save
+
+vyos@vyos# exit
+
+vyos@vyos$ reboot
+([рис. @fig-064]).
+
+![Настройка устройства gw-01](image/64.png){#fig-064 width=70%}
+
+Аналогичным образом настроим устройства gw-02 и gw-02
+([рис. @fig-065]).
+
+![Настройка устройств gw-02 и gw-02](image/65.png){#fig-065 width=70%}
+
+Настроим адреса на интерфейсах маршрутизаторов:
+
+msk-user-gw-01:
+
+vyos@msk-user-gw-01:~$ configure
+
+vyos@msk-user-gw-01# set interfaces ethernet eth0 address 1000::1/64
+
+vyos@msk-user-gw-01# set interfaces ethernet eth1 address 10.0.0.1/8
+
+vyos@msk-user-gw-01# set service router-advert interface eth0 prefix 1000::/64
+
+vyos@msk-user-gw-01# commit
+
+vyos@msk-user-gw-01# save
+
+msk-user-gw-02:
+
+vyos@msk-user-gw-02:~$ configure
+
+vyos@msk-user-gw-02# set interfaces ethernet eth0 address 1002::1/64
+
+vyos@msk-user-gw-02# set interfaces ethernet eth1 address 20.0.0.2/8
+
+vyos@msk-user-gw-02# set service router-advert interface eth0 prefix 1002::/64
+
+vyos@msk-user-gw-02# commit
+
+vyos@msk-user-gw-02# save
+
+msk-user-gw-03:
+
+vyos@msk-user-gw-03:~$ configure
+
+vyos@msk-user-gw-03# set interfaces ethernet eth0 address 10.0.0.2/8
+
+vyos@msk-user-gw-03# set interfaces ethernet eth1 address 20.0.0.1/8
+
+vyos@msk-user-gw-03# commit
+
+vyos@msk-user-gw-03# save
+([рис. @fig-066]).
+
+![Настройка адресов на интерфейсах маршрутизаторов](image/66.png){#fig-066 width=70%}
+
+Убедимся, что на PC появились адреса ближайших к ним маршрутизаторов:
+
+PCx-user:
+
+show ipv6
+([рис. @fig-067]).
+
+![Проверка адресов ближайших маршрутизаторов к оконечным устройствам](image/67.png){#fig-067 width=70%}
+
+Проверим маршруты с маршрутизатора R1:
+
+vyos@msk-user-gw-01:~$ ping 10.0.0.2
+
+vyos@msk-user-gw-01:~$ ping 20.0.0.1
+
+vyos@msk-user-gw-01:~$ ping 20.0.0.2
+([рис. @fig-068]).
+
+![Проверка маршрутов с маршрутизатора R1](image/68.png){#fig-068 width=70%}
+
+Настроим маршрутизацию IPv4:
+
+msk-user-gw-01:
+
+vyos@msk-user-gw-01:~$ configure
+
+vyos@msk-user-gw-01# set protocols rip network 10.0.0.0/8
+
+vyos@msk-user-gw-01# commit
+
+vyos@msk-user-gw-01# save
+
+msk-user-gw-02:
+
+vyos@msk-user-gw-02:~$ configure
+
+vyos@msk-user-gw-02# set protocols rip network 20.0.0.0/8
+
+vyos@msk-user-gw-02# commit
+
+vyos@msk-user-gw-02# save
+
+msk-user-gw-03:
+
+vyos@msk-user-gw-03:~$ configure
+
+vyos@msk-user-gw-03# set protocols rip network 10.0.0.0/8
+
+vyos@msk-user-gw-03# set protocols rip network 20.0.0.0/8
+
+vyos@msk-user-gw-03# commit
+
+vyos@msk-user-gw-03# save
+([рис. @fig-069]).
+
+![Настройка маршрутизации IPV4](image/69.png){#fig-069 width=70%}
+
+Проверим маршруты:
+
+vyos@msk-user-gw-01:~$ ping 10.0.0.2
+
+vyos@msk-user-gw-01:~$ ping 20.0.0.1
+
+vyos@msk-user-gw-01:~$ ping 20.0.0.2
+([рис. @fig-070]).
+
+![Проверка маршрутов](image/70.png){#fig-070 width=70%}
+
+Создадим туннель IPv6 через сеть IPv4:
+msk-user-gw-01:
+
+
+vyos@msk-user-gw-01:~$ configure
+
+vyos@msk-user-gw-01# set interfaces tunnel tun0 encapsulation sit
+
+vyos@msk-user-gw-01# set interfaces tunnel tun0 source-address 10.0.0.1
+
+vyos@msk-user-gw-01# set interfaces tunnel tun0 remote 20.0.0.2
+
+vyos@msk-user-gw-01# set interfaces tunnel tun0 address 1001::1/64
+
+vyos@msk-user-gw-01# commit
+
+vyos@msk-user-gw-01# save
+
+msk-user-gw-02:
+
+vyos@msk-user-gw-02:~$ configure
+
+vyos@msk-user-gw-02# set interfaces tunnel tun0 encapsulation sit
+
+vyos@msk-user-gw-02# set interfaces tunnel tun0 source-address 20.0.0.2
+
+vyos@msk-user-gw-02# set interfaces tunnel tun0 remote 10.0.0.1
+
+vyos@msk-user-gw-02# set interfaces tunnel tun0 address 1001::2/64
+
+vyos@msk-user-gw-02# commit
+
+vyos@msk-user-gw-02# save
+([рис. @fig-071]).
+
+![Создание туннеля IPv6 через сеть IPv4](image/71.png){#fig-071 width=70%}
+
+Настроим статическую маршрутизацию IPv6:
+
+msk-user-gw-01:
+
+vyos@msk-user-gw-01:~$ configure
+
+vyos@msk-user-gw-01# set protocols static route6 1002::0/64 next-hop 1001::2
+
+vyos@msk-user-gw-01# commit
+
+vyos@msk-user-gw-01# save
+
+msk-user-gw-02:
+
+vyos@msk-user-gw-02:~$ configure
+
+vyos@msk-user-gw-02# set protocols static route6 1000::0/64 next-hop 1001::1
+
+vyos@msk-user-gw-02# commit
+
+vyos@msk-user-gw-02# save
+([рис. @fig-072]).
+
+![Настройка статической маршрутизации IPv6](image/72.png){#fig-072 width=70%}
+
+Проверим доступность оконечных устройств:
+
+PC1-user:
+
+PC1-user> ping 1002::a
+
+PC1-user> trace 1002::a
+
+PC2-user:
+
+PC2-user> ping 1000::a
+
+PC2-user> trace 1000::a
+([рис. @fig-073]).
+
+![Проверка доступности оконечных устройств](image/73.png){#fig-073 width=70%}
+
+# Выводы
+
+Я изучил принципы маршрутизации в IPv4- и IPv6-сетях и принципов настройки сетевого оборудования.
